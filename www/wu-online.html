@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>⚔️ 技能五子棋 · 联机对战</title>
+    <style>
+        * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
+        body {
+            background: linear-gradient(145deg, #2b5a3a 0%, #1d3e2a 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', '华文楷体', 'PingFang SC', sans-serif;
+            margin: 0;
+            padding: 12px;
+        }
+        .container {
+            background: #c9a87c;
+            background-image: radial-gradient(circle at 25% 30%, #e0c9a6, #b58b5a);
+            padding: 20px;
+            border-radius: 40px;
+            box-shadow: 0 20px 20px rgba(0,0,0,0.5);
+            border: 5px solid #a57c5a;
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+        .title {
+            color: #f9eed7;
+            text-shadow: 2px 2px 0 #5d3e1e;
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 30px;
+        }
+        .btn {
+            background: #3b1e2b;
+            border: 3px solid #ffb347;
+            color: #fff1b5;
+            font-size: 20px;
+            font-weight: bold;
+            padding: 14px 30px;
+            border-radius: 50px;
+            margin: 10px;
+            cursor: pointer;
+            box-shadow: 0 6px 0 #4f2b1a;
+            transition: 0.1s;
+            display: inline-block;
+            min-width: 180px;
+        }
+        .btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #4f2b1a; }
+        .input-group {
+            margin: 20px 0;
+            display: none;
+        }
+        .input-group.show { display: block; }
+        .input-group input {
+            padding: 12px 15px;
+            font-size: 18px;
+            border-radius: 30px;
+            border: 3px solid #b5945a;
+            background: #f5e1be;
+            width: 100%;
+            max-width: 250px;
+            text-align: center;
+            margin: 8px 0;
+        }
+        .input-group label {
+            color: #f9eed7;
+            font-size: 16px;
+            display: block;
+            margin-top: 10px;
+        }
+        .status {
+            color: #ffd966;
+            font-size: 18px;
+            margin: 20px 0;
+            min-height: 30px;
+        }
+        .back-btn {
+            background: #2b4f5c;
+            border-color: #7ec8e0;
+        }
+
+        /* 上传照片界面 */
+        #uploadScreen {
+            display: none;
+        }
+        .upload-area {
+            background: #3e2e1b;
+            border: 3px dashed #b5945a;
+            border-radius: 20px;
+            padding: 30px 20px;
+            margin: 20px 0;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .upload-area:hover {
+            border-color: #ffd966;
+            background: #4a3828;
+        }
+        .upload-area.has-image {
+            padding: 10px;
+        }
+        .upload-area img {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 15px;
+            border: 3px solid #ffd966;
+        }
+        .upload-icon {
+            font-size: 50px;
+            margin-bottom: 10px;
+        }
+        .upload-text {
+            color: #dac292;
+            font-size: 16px;
+        }
+        .upload-note {
+            color: #ffaa66;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        .waiting-status {
+            color: #66ccff;
+            font-size: 16px;
+            margin: 15px 0;
+            padding: 10px;
+            background: #1d2c1a;
+            border-radius: 15px;
+        }
+        .ready-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            margin: 5px;
+        }
+        .ready-badge.waiting {
+            background: #5a3f2e;
+            color: #aaa;
+        }
+        .ready-badge.done {
+            background: #2d5a33;
+            color: #7fcc7f;
+        }
+
+        /* 游戏界面 */
+        #gameScreen {
+            display: none;
+        }
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #f9eed7;
+            text-shadow: 2px 2px 0 #5d3e1e;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .turn-indicator {
+            background: #2c2c2c;
+            padding: 6px 18px;
+            border-radius: 40px;
+            box-shadow: inset 0 -3px 0 #6b4f32, 0 4px 0 #371f0e;
+            font-size: 16px;
+            color: #f5e1be;
+            border: 2px solid #cfb087;
+        }
+        .turn-indicator span { color: #ffd966; font-weight: 900; margin-left: 6px; }
+
+        .board-wrapper {
+            display: flex;
+            justify-content: center;
+            margin: 6px 0 10px;
+            background: #ebc28e;
+            padding: 16px 12px 12px;
+            border-radius: 48px 48px 30px 30px;
+            box-shadow: inset 0 -6px 0 #9b7b56, 0 8px 15px #3f2e1b;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            max-width: 500px;
+            aspect-ratio: 1/1;
+            background: #f2dbb0;
+            border-radius: 20px;
+            box-shadow: 0 0 0 5px #7b5d40, 0 12px 20px #1e2b1a;
+            cursor: pointer;
+        }
+        .game-status {
+            background: #1d2c1a;
+            color: #ffde9e;
+            padding: 10px 18px;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: bold;
+            margin: 10px 0;
+            border: 2px solid #ad8b5a;
+        }
+        .skill-panels {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        .player-panel {
+            background: #2d4a33;
+            border: 3px solid #e3c184;
+            border-radius: 30px;
+            padding: 10px;
+            flex: 1 1 220px;
+            min-width: 200px;
+        }
+        .player-panel.my-panel {
+            border-color: #2f2f2f;
+        }
+        .player-panel.op-panel {
+            border-color: #e8e8e8;
+        }
+        .panel-title {
+            text-align: center;
+            color: #fbe49b;
+            font-size: 16px;
+            font-weight: bold;
+            margin: -20px auto 10px;
+            background: inherit;
+            display: inline-block;
+            padding: 4px 15px;
+            border-radius: 20px;
+        }
+        .skill-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+        }
+        .skill-btn {
+            background: #3b2b1a;
+            border: 2px outset #c9a35c;
+            color: #faeac6;
+            font-size: 12px;
+            font-weight: bold;
+            padding: 6px 2px;
+            border-radius: 20px;
+            box-shadow: 0 3px 0 #1f140c;
+            cursor: pointer;
+        }
+        .skill-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #1f140c; }
+        .skill-btn:disabled { opacity: 0.5; pointer-events: none; }
+
+        .dice-area {
+            background: #3e2e1b;
+            border-radius: 20px;
+            padding: 15px;
+            margin: 10px 0;
+            border: 2px solid #b5945a;
+            display: none;
+        }
+        .dice-area.show { display: block; }
+        .dice-result {
+            background: #1d281b;
+            padding: 10px;
+            border-radius: 20px;
+            color: #ffd966;
+            font-size: 18px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .dice-number { font-size: 32px; margin: 0 10px; }
+
+        .victory-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .victory-overlay.show { display: flex; }
+        .victory-image {
+            max-width: 80%;
+            max-height: 50%;
+            border-radius: 20px;
+            border: 5px solid gold;
+            box-shadow: 0 0 30px rgba(255,215,0,0.8);
+        }
+        .victory-text {
+            font-size: 40px;
+            font-weight: 900;
+            color: gold;
+            text-shadow: 4px 4px 0 #8b0000;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="title">⚔️ 技能五子棋 ⚔️</div>
+        <div class="title" style="font-size: 20px; margin-top: -20px; margin-bottom: 30px;">联机对战</div>
+
+        <div id="menuScreen">
+            <button class="btn" id="createBtn">⚔️ 创建房间</button>
+            <br>
+            <button class="btn" id="joinBtn">🔗 加入房间</button>
+        </div>
+
+        <div class="input-group" id="joinGroup">
+            <label>房间号</label>
+            <input type="text" id="roomIdInput" placeholder="请输入6位房间号" maxlength="6">
+            <label>昵称</label>
+            <input type="text" id="nameInput" placeholder="你的昵称" maxlength="10">
+            <br>
+            <button class="btn" id="confirmJoinBtn">加入</button>
+            <button class="btn back-btn" id="backBtn">返回</button>
+        </div>
+
+        <div class="input-group" id="createGroup">
+            <label>昵称</label>
+            <input type="text" id="createNameInput" placeholder="你的昵称" maxlength="10">
+            <br>
+            <button class="btn" id="confirmCreateBtn">创建</button>
+            <button class="btn back-btn" id="backBtn2">返回</button>
+        </div>
+
+        <div class="status" id="status"></div>
+
+        <!-- 上传照片界面 -->
+        <div id="uploadScreen">
+            <div class="title" style="font-size: 22px;">📸 上传展示照片</div>
+            <div class="upload-note">用于两极反转彩蛋展示</div>
+
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📤</div>
+                <div class="upload-text">点击上传照片</div>
+            </div>
+            <input type="file" id="imageInput" accept="image/*" style="display:none;">
+
+            <div id="myReadyStatus" class="ready-badge waiting">⏳ 我未准备</div>
+            <div id="opReadyStatus" class="ready-badge waiting">⏳ 对手未准备</div>
+
+            <div class="waiting-status" id="waitingStatus">等待对手加入...</div>
+
+            <button class="btn" id="confirmReadyBtn" style="display:none;">✅ 确认准备</button>
+        </div>
+
+        <!-- 游戏界面 -->
+        <div id="gameScreen">
+            <div class="game-header">
+                <div>房间: <span id="gameRoomId"></span></div>
+                <div class="turn-indicator">👑 <span id="turnText">黑方</span></div>
+            </div>
+
+            <div class="board-wrapper">
+                <canvas id="boardCanvas" width="500" height="500"></canvas>
+            </div>
+
+            <div class="game-status" id="gameStatus">⚫ 黑方回合</div>
+
+            <div class="dice-area" id="diceArea">
+                <div>🎲 对方可能使用擒拿，是否反击？</div>
+                <div style="margin:10px 0;">
+                    <span class="dice-number" id="atkDice">⚀</span>
+                    <span style="font-size:24px;">VS</span>
+                    <span class="dice-number" id="defDice">⚀</span>
+                </div>
+                <div class="dice-result" id="diceResult">等待响应...</div>
+                <button class="btn" id="useCatchBtn">🛡️ 使用擒拿</button>
+                <button class="btn" id="noCatchBtn" style="background:#5a3f2e;">🚫 不使用</button>
+            </div>
+
+            <div class="skill-panels">
+                <div class="player-panel my-panel" id="myPanel">
+                    <div class="panel-title" id="myPanelTitle">⚫ 我的技能</div>
+                    <div class="skill-grid" id="mySkills">
+                        <button class="skill-btn" data-skill="sand">🌪️飞沙走石</button>
+                        <button class="skill-btn" data-skill="still">❄️静如止水</button>
+                        <button class="skill-btn" data-skill="power">🏋️力拔山兮</button>
+                        <button class="skill-btn" data-skill="catch">🤏擒拿</button>
+                        <button class="skill-btn" data-skill="revive">🌱东山再起</button>
+                        <button class="skill-btn" data-skill="return">💰拾金不昧</button>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn" id="restartBtn" style="margin-top:15px;display:none;">🔄 再来一局</button>
+        </div>
+
+        <!-- 胜利/两极反转界面 -->
+        <div class="victory-overlay" id="victoryOverlay">
+            <img class="victory-image" id="victoryImage" src="" alt="胜利者照片">
+            <div class="victory-text" id="victoryText">🌀 两级反转 🌀</div>
+            <button class="btn" id="newGameBtn">🔄 再来一局</button>
+            <button class="btn back-btn" id="backToMenuBtn">🏠 返回首页</button>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let myColor;
+        let roomId;
+        let playerName = '';
+        let myImage = null;
+        let opponentImage = null;
+        let opponentName = '';
+        let wsConnected = false;
+        let serverUrl = ''; // 服务器地址
+
+        // 游戏状态
+        let board = [];
+        let turn = 'black';
+        let gameOver = false;
+        let frozenPlayer = null;
+        let lastRemoved = null;
+        let awaitingCounter = false;
+        let skillSelecting = false;
+        let activeSkill = null;
+        let doubleTurn = false;  // 连下两子标记
+
+        const BOARD_SIZE = 15;
+        const colorMap = { 'black': 1, 'white': 2 };
+        const diceFaces = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
+
+        const menuScreen = document.getElementById('menuScreen');
+        const joinGroup = document.getElementById('joinGroup');
+        const createGroup = document.getElementById('createGroup');
+        const uploadScreen = document.getElementById('uploadScreen');
+        const gameScreen = document.getElementById('gameScreen');
+        const status = document.getElementById('status');
+
+        const uploadArea = document.getElementById('uploadArea');
+        const imageInput = document.getElementById('imageInput');
+        const confirmReadyBtn = document.getElementById('confirmReadyBtn');
+        const myReadyStatus = document.getElementById('myReadyStatus');
+        const opReadyStatus = document.getElementById('opReadyStatus');
+        const waitingStatus = document.getElementById('waitingStatus');
+
+        // 游戏界面元素
+        const gameRoomId = document.getElementById('gameRoomId');
+        const turnText = document.getElementById('turnText');
+        const gameStatus = document.getElementById('gameStatus');
+        const boardCanvas = document.getElementById('boardCanvas');
+        const ctx = boardCanvas.getContext('2d');
+        const diceArea = document.getElementById('diceArea');
+        const atkDice = document.getElementById('atkDice');
+        const defDice = document.getElementById('defDice');
+        const diceResult = document.getElementById('diceResult');
+        const victoryOverlay = document.getElementById('victoryOverlay');
+        const victoryImage = document.getElementById('victoryImage');
+        const victoryText = document.getElementById('victoryText');
+        const restartBtn = document.getElementById('restartBtn');
+        const newGameBtn = document.getElementById('newGameBtn');
+        const backToMenuBtn = document.getElementById('backToMenuBtn');
+
+        let reconnectTimer = null;
+        let heartbeatTimer = null;
+
+        function connectWS() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                return; // 避免重复连接
+            }
+
+            // 获取服务器地址：从URL参数或从当前页面地址推断
+            const urlParams = new URLSearchParams(window.location.search);
+            const serverIP = urlParams.get('server') || window.location.hostname;
+            serverUrl = `ws://${serverIP}:3000`;
+
+            status.innerText = `正在连接 ${serverUrl}...`;
+            ws = new WebSocket(serverUrl);
+
+            ws.onopen = () => {
+                wsConnected = true;
+                status.innerText = `已连接服务器: ${serverUrl}`;
+
+                // 启动心跳
+                startHeartbeat();
+
+                // 如果之前在房间里，尝试重连
+                if (roomId && myColor) {
+                    ws.send(JSON.stringify({
+                        type: 'reconnect',
+                        roomId: roomId,
+                        playerColor: myColor
+                    }));
+                }
+            };
+
+            ws.onmessage = (event) => {
+                const msg = JSON.parse(event.data);
+
+                // 处理心跳
+                if (msg.type === 'ping') {
+                    ws.send(JSON.stringify({ type: 'pong' }));
+                    return;
+                }
+
+                handleMessage(msg);
+            };
+
+            ws.onclose = () => {
+                // 清除心跳
+                if (heartbeatTimer) {
+                    clearInterval(heartbeatTimer);
+                    heartbeatTimer = null;
+                }
+
+                // 尝试自动重连
+                if (roomId && myColor) {
+                    status.innerText = '连接断开，尝试重连...';
+                    reconnectTimer = setInterval(() => {
+                        connectWS();
+                    }, 3000);
+
+                    // 最多重连10次
+                    setTimeout(() => {
+                        if (reconnectTimer) {
+                            clearInterval(reconnectTimer);
+                            reconnectTimer = null;
+                            status.innerText = `连接断开！\n服务器: ${serverUrl}\n请检查：\n1. 电脑IP是否正确\n2. 电脑防火墙是否阻止\n3. 电脑服务器是否已启动`;
+                        }
+                    }, 30000);
+                } else {
+                    status.innerText = `连接断开！\n服务器: ${serverUrl}\n请检查：\n1. 电脑IP是否正确\n2. 电脑防火墙是否阻止\n3. 电脑服务器是否已启动`;
+                }
+            };
+
+            ws.onerror = () => {
+                status.innerText = `连接失败！\n服务器: ${serverUrl}\n请检查：\n1. 电脑IP是否正确\n2. 电脑防火墙是否阻止\n3. 电脑服务器是否已启动\n4. 手机和电脑在同一WiFi下`;
+            };
+        }
+
+        // 启动心跳
+        function startHeartbeat() {
+            if (heartbeatTimer) {
+                clearInterval(heartbeatTimer);
+            }
+            heartbeatTimer = setInterval(() => {
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ type: 'pong' }));
+                }
+            }, 25000);
+        }
+
+        // 监听页面可见性变化（切屏时保持连接）
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                if (roomId && myColor && (!ws || ws.readyState !== WebSocket.OPEN)) {
+                    connectWS();
+                }
+            }
+        });
+
+        function handleMessage(msg) {
+            switch(msg.type) {
+                case 'roomCreated':
+                    roomId = msg.roomId;
+                    myColor = msg.playerColor;
+                    playerName = msg.playerName || playerName;
+
+                    // 隐藏输入界面，显示等待状态
+                    joinGroup.style.display = 'none';
+                    createGroup.style.display = 'none';
+
+                    if (myColor === 'black') {
+                        status.innerText = `房间号: ${roomId}\n等待对手加入...`;
+                    } else {
+                        // 加入方直接进入上传界面
+                        status.style.display = 'none';
+                        showUploadScreen();
+                        waitingStatus.innerText = '等待对手加入...';
+                    }
+                    break;
+                case 'playerJoined':
+                    status.innerText = `对手已加入！\n请上传照片准备开始`;
+                    opponentName = msg.playerName || '对手';
+                    waitingStatus.innerText = `等待对手上传照片...`;
+                    // 只有创建方才需要跳转到上传界面
+                    setTimeout(() => {
+                        showUploadScreen();
+                    }, 1500);
+                    break;
+                case 'imageUploaded':
+                    if (msg.color !== myColor) {
+                        opReadyStatus.className = 'ready-badge done';
+                        opReadyStatus.innerText = '✅ 对手已上传';
+                    }
+                    break;
+                case 'waitingForImage':
+                    waitingStatus.innerText = '等待对手上传照片...';
+                    break;
+                case 'gameStart':
+                    opponentImage = msg.opponentImage;
+                    opponentName = msg.opponentName || '对手';
+                    startGame(msg.turn);
+                    break;
+                case 'opponentMove':
+                    const val = msg.player === 'black' ? 1 : 2;
+                    board[msg.row][msg.col] = val;
+                    drawBoard();
+                    break;
+                case 'turnChange':
+                    // 如果收到连下两子标记，保持当前玩家
+                    doubleTurn = msg.doubleTurn || false;
+                    // 如果下回合是冻结方，解冻并跳过
+                    if (frozenPlayer === msg.turn) {
+                        gameStatus.innerText = `❄️ ${msg.turn === 'black' ? '黑方' : '白方'} 冻结已解除`;
+                        frozenPlayer = null;
+                        turn = msg.turn;
+                    } else {
+                        turn = msg.turn;
+                    }
+                    // 如果连下两子，显示提示
+                    if (doubleTurn) {
+                        gameStatus.innerText = `🎯 ${turn === myColor ? '你' : '对手'}连下两子！`;
+                    }
+                    updateTurnDisplay();
+                    refreshSkillButtons();
+                    drawBoard();
+                    break;
+                case 'skillUsed':
+                    if (msg.skill === 'sand') {
+                        // 飞沙走石结果由sandResult处理
+                        gameStatus.innerText = '🌪️ 飞沙走石！';
+                    } else if (msg.skill === 'still') {
+                        frozenPlayer = msg.frozen;
+                        doubleTurn = true;  // 开启连下两子
+                        gameStatus.innerText = `❄️ 静如止水！${msg.frozen === 'black' ? '黑方' : '白方'}被冻结，${turn === myColor ? '你' : '对手'}连下两子`;
+                    } else if (msg.skill === 'return') {
+                        board[msg.row][msg.col] = msg.color;
+                        lastRemoved = null;
+                        gameStatus.innerText = '💰 拾金不昧！棋子已从什刹海捡回';
+                    } else if (msg.skill === 'revive') {
+                        // 东山再起恢复棋盘
+                        if (msg.board) {
+                            board = msg.board.map(r => [...r]);
+                            turn = msg.turn;
+                            frozenPlayer = msg.frozenPlayer;
+                            lastRemoved = msg.lastRemoved;
+                            doubleTurn = false;
+                            gameOver = false;
+                        }
+                        gameStatus.innerText = '🌱 东山再起！棋盘已恢复';
+                        drawBoard();
+                        refreshSkillButtons();
+                    }
+                    drawBoard();
+                    refreshSkillButtons();
+                    break;
+                case 'sandChallenge':
+                    // 对方使用飞沙走石，询问是否使用擒拿
+                    const useCatch = confirm('对方使用【飞沙走石】选择了棋子！\n\n是否使用【擒拿】反击？\n（掷骰子比大小，防守成功则棋子保留）');
+                    ws.send(JSON.stringify({
+                        type: 'sandResponse',
+                        useCatch: useCatch,
+                        target: msg.target,
+                        attacker: msg.attacker
+                    }));
+                    break;
+                case 'sandResult':
+                    // 飞沙走石/擒拿结果
+                    atkDice.innerText = diceFaces[msg.atkRoll - 1];
+                    defDice.innerText = diceFaces[msg.defRoll - 1];
+                    diceArea.classList.add('show');
+
+                    if (msg.success) {
+                        if (msg.useCatch) {
+                            diceResult.innerText = '🛡️ 擒拿成功！棋子保留';
+                        } else {
+                            diceResult.innerText = '🛡️ 对手放弃防守！棋子保留';
+                        }
+                    } else {
+                        diceResult.innerText = '🌪️ 防守失败！棋子已丢入什刹海';
+                        // 从棋盘移除棋子
+                        board[msg.target.row][msg.target.col] = 0;
+                        lastRemoved = { row: msg.target.row, col: msg.target.col, color: 0 };
+                        drawBoard();
+                    }
+                    setTimeout(() => {
+                        diceArea.classList.remove('show');
+                        refreshSkillButtons();
+                    }, 2000);
+                    break;
+                case 'powerChallenge':
+                    const useRevive = confirm('对方使用【力拔山兮】！\n\n是否使用【东山再起】反弹？\n（反弹后棋盘恢复）');
+                    ws.send(JSON.stringify({
+                        type: 'powerResponse',
+                        use: useRevive
+                    }));
+                    break;
+                case 'gameOver':
+                    gameOver = true;
+                    refreshSkillButtons();
+                    const winnerColor = msg.winner;
+                    const winnerIsMe = winnerColor === myColor;
+                    gameStatus.innerText = winnerIsMe ? '🎉 你赢了！' : '💔 你输了';
+
+                    // 显示两极反转
+                    victoryImage.src = msg.winnerImage || '';
+                    victoryText.innerText = winnerIsMe ? '🎉 你赢了！' : '💔 你输了';
+                    setTimeout(() => {
+                        victoryOverlay.classList.add('show');
+                    }, 1000);
+                    break;
+                case 'reconnectSuccess':
+                    if (reconnectTimer) {
+                        clearInterval(reconnectTimer);
+                        reconnectTimer = null;
+                    }
+                    status.innerText = '重连成功！';
+                    refreshSkillButtons();
+                    break;
+                case 'reconnectFailed':
+                    alert(msg.message || '重连失败');
+                    roomId = null;
+                    myColor = null;
+                    location.reload();
+                    break;
+                case 'error':
+                    alert(msg.message);
+                    status.innerText = '';
+                    break;
+                case 'playerLeft':
+                    alert('对手已离开房间');
+                    location.reload();
+                    break;
+                case 'gameReset':
+                    // 重新开始
+                    board = Array(BOARD_SIZE).fill().map(() => Array(BOARD_SIZE).fill(0));
+                    turn = 'black';
+                    gameOver = false;
+                    frozenPlayer = null;
+                    lastRemoved = null;
+                    doubleTurn = false;
+                    victoryOverlay.classList.remove('show');
+                    updateTurnDisplay();
+                    drawBoard();
+                    refreshSkillButtons();
+                    break;
+            }
+        }
+
+        function showUploadScreen() {
+            menuScreen.style.display = 'none';
+            joinGroup.style.display = 'none';
+            createGroup.style.display = 'none';
+            uploadScreen.style.display = 'block';
+            status.style.display = 'none';
+            confirmReadyBtn.style.display = 'inline-block';
+        }
+
+        // 上传照片
+        uploadArea.onclick = () => imageInput.click();
+        imageInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                myImage = ev.target.result;
+                uploadArea.innerHTML = `<img src="${myImage}">`;
+                uploadArea.classList.add('has-image');
+                myReadyStatus.className = 'ready-badge done';
+                myReadyStatus.innerText = '✅ 我已上传';
+            };
+            reader.readAsDataURL(file);
+        };
+
+        // 确认准备
+        confirmReadyBtn.onclick = () => {
+            if (!myImage) {
+                alert('请先上传照片');
+                return;
+            }
+            ws.send(JSON.stringify({ type: 'uploadImage', image: myImage }));
+            confirmReadyBtn.disabled = true;
+            confirmReadyBtn.innerText = '⏳ 等待对手...';
+            waitingStatus.innerText = '等待对手准备...';
+        };
+
+        function startGame(initTurn) {
+            uploadScreen.style.display = 'none';
+            gameScreen.style.display = 'block';
+
+            board = Array(BOARD_SIZE).fill().map(() => Array(BOARD_SIZE).fill(0));
+            turn = initTurn;
+            gameOver = false;
+            frozenPlayer = null;
+            lastRemoved = null;
+
+            gameRoomId.innerText = roomId;
+            updateTurnDisplay();
+            drawBoard();
+            refreshSkillButtons();
+        }
+
+        function drawBoard() {
+            ctx.clearRect(0, 0, 500, 500);
+            ctx.lineWidth = 1.8;
+            ctx.strokeStyle = '#5f4c3b';
+
+            const cellSize = 30;
+            const offset = 25;
+
+            for (let i = 0; i < BOARD_SIZE; i++) {
+                ctx.beginPath();
+                ctx.moveTo(offset + i * cellSize, offset);
+                ctx.lineTo(offset + i * cellSize, offset + (BOARD_SIZE - 1) * cellSize);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(offset, offset + i * cellSize);
+                ctx.lineTo(offset + (BOARD_SIZE - 1) * cellSize, offset + i * cellSize);
+                ctx.stroke();
+            }
+
+            // 星位
+            [[3,3],[3,11],[7,7],[11,3],[11,11]].forEach(([x, y]) => {
+                ctx.beginPath();
+                ctx.arc(offset + x * cellSize, offset + y * cellSize, 4, 0, 2*Math.PI);
+                ctx.fillStyle = '#5f4c3b';
+                ctx.fill();
+            });
+
+            // 棋子
+            for (let r = 0; r < BOARD_SIZE; r++) {
+                for (let c = 0; c < BOARD_SIZE; c++) {
+                    if (board[r][c] === 0) continue;
+                    let x = offset + c * cellSize;
+                    let y = offset + r * cellSize;
+
+                    ctx.shadowColor = '#00000055';
+                    ctx.shadowBlur = 6;
+                    ctx.shadowOffsetX = 2;
+                    ctx.shadowOffsetY = 2;
+
+                    let gradient = ctx.createRadialGradient(x-4, y-4, 4, x, y, 20);
+                    if (board[r][c] === 1) {
+                        gradient.addColorStop(0, '#333');
+                        gradient.addColorStop(0.8, '#111');
+                    } else {
+                        gradient.addColorStop(0, '#f9f9fa');
+                        gradient.addColorStop(0.9, '#b5b5b5');
+                    }
+                    ctx.beginPath();
+                    ctx.arc(x, y, 13, 0, 2*Math.PI);
+                    ctx.fillStyle = gradient;
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                    ctx.strokeStyle = '#333';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+            }
+
+            // 冻结效果
+            if (frozenPlayer) {
+                const pieceVal = frozenPlayer === 'black' ? 1 : 2;
+                ctx.save();
+                ctx.shadowColor = '#3ec1d3';
+                ctx.shadowBlur = 15;
+                ctx.globalAlpha = 0.5;
+                for (let r = 0; r < BOARD_SIZE; r++) {
+                    for (let c = 0; c < BOARD_SIZE; c++) {
+                        if (board[r][c] === pieceVal) {
+                            let x = offset + c * cellSize;
+                            let y = offset + r * cellSize;
+                            ctx.beginPath();
+                            ctx.arc(x, y, 16, 0, 2*Math.PI);
+                            ctx.fillStyle = '#aaf0f1';
+                            ctx.fill();
+                        }
+                    }
+                }
+                ctx.restore();
+            }
+        }
+
+        function updateTurnDisplay() {
+            if (gameOver) return;
+            const isMyTurn = turn === myColor;
+            turnText.innerText = isMyTurn ? `${myColor === 'black' ? '⚫ 黑方(我)' : '⚪ 白方(我)'}` : `${turn === 'black' ? '⚫ 黑方' : '⚪ 白方'}`;
+            gameStatus.innerText = frozenPlayer === turn ? `⚠️ ${turn === 'black' ? '黑方' : '白方'} 被冻结` : `${turn === 'black' ? '⚫ 黑方' : '⚪ 白方'}回合${isMyTurn ? ' · 点击棋盘落子' : ' · 等待对手...'}`;
+        }
+
+        function getOpponent(color) {
+            return color === 'black' ? 'white' : 'black';
+        }
+
+        function tryPlacePiece(row, col) {
+            if (gameOver || turn !== myColor || frozenPlayer === turn || board[row][col] !== 0) {
+                return false;
+            }
+            ws.send(JSON.stringify({ type: 'move', row, col }));
+            return true;
+        }
+
+        function canvasClickHandler(e) {
+            if (gameOver || turn !== myColor || skillSelecting) return;
+
+            const rect = boardCanvas.getBoundingClientRect();
+            const scaleX = boardCanvas.width / rect.width;
+            const scaleY = boardCanvas.height / rect.height;
+            const cellSize = 30;
+            const offset = 25;
+
+            const col = Math.round(((e.clientX - rect.left) * scaleX - offset) / cellSize);
+            const row = Math.round(((e.clientY - rect.top) * scaleY - offset) / cellSize);
+
+            if (row >= 0 && row < BOARD_SIZE && col >= 0 && col < BOARD_SIZE) {
+                tryPlacePiece(row, col);
+            }
+        }
+
+        function refreshSkillButtons() {
+            if (gameOver) {
+                document.querySelectorAll('.skill-btn').forEach(btn => btn.disabled = true);
+                return;
+            }
+            // 连下两子时也能使用技能
+            const isMyTurn = turn === myColor;
+            document.querySelectorAll('.skill-btn').forEach(btn => {
+                btn.disabled = !isMyTurn || awaitingCounter;
+            });
+        }
+
+        function handleSkillClick(e) {
+            const btn = e.currentTarget;
+            if (btn.disabled || gameOver || turn !== myColor) return;
+
+            const skill = btn.dataset.skill;
+
+            if (skill === 'sand') {
+                skillSelecting = true;
+                gameStatus.innerText = '👆 点击对手棋子';
+                refreshSkillButtons();
+
+                const handler = (ev) => {
+                    const rect = boardCanvas.getBoundingClientRect();
+                    const scaleX = boardCanvas.width / rect.width;
+                    const scaleY = boardCanvas.height / rect.height;
+                    const cellSize = 30;
+                    const offset = 25;
+
+                    const col = Math.round(((ev.clientX - rect.left) * scaleX - offset) / cellSize);
+                    const row = Math.round(((ev.clientY - rect.top) * scaleY - offset) / cellSize);
+
+                    if (row < 0 || row >= BOARD_SIZE || col < 0 || col >= BOARD_SIZE || board[row][col] === 0) {
+                        cancelSkillSelect();
+                        return;
+                    }
+
+                    const targetColor = board[row][col];
+                    if ((myColor === 'black' && targetColor !== 2) || (myColor === 'white' && targetColor !== 1)) {
+                        alert('只能选对手棋子');
+                        return;
+                    }
+
+                    boardCanvas.removeEventListener('click', handler);
+                    skillSelecting = false;
+
+                    // 发送飞沙走石请求，服务器会询问对手是否擒拿
+                    ws.send(JSON.stringify({
+                        type: 'skill',
+                        skill: 'sand',
+                        target: { row, col }
+                    }));
+                    refreshSkillButtons();
+                };
+
+                boardCanvas.addEventListener('click', handler);
+
+                function cancelSkillSelect() {
+                    boardCanvas.removeEventListener('click', handler);
+                    skillSelecting = false;
+                    updateTurnDisplay();
+                    refreshSkillButtons();
+                }
+            }
+            else if (skill === 'still') {
+                // 静如止水：冻结对手，己方连下两子
+                ws.send(JSON.stringify({ type: 'skill', skill: 'still', target: {} }));
+            }
+            else if (skill === 'power') {
+                // 力拔山兮：直接获胜
+                if (confirm('确认使用【力拔山兮】直接获胜？对方可使用【东山再起】反击！')) {
+                    ws.send(JSON.stringify({ type: 'skill', skill: 'power', target: {} }));
+                }
+            }
+            else if (skill === 'return') {
+                // 拾金不昧
+                ws.send(JSON.stringify({ type: 'skill', skill: 'return', target: {} }));
+            }
+            else if (skill === 'revive' || skill === 'catch') {
+                alert('此技能由对方触发时自动使用');
+            }
+        }
+
+        // 绑定棋盘点击
+        boardCanvas.addEventListener('click', canvasClickHandler);
+
+        // 绑定技能按钮
+        document.querySelectorAll('.skill-btn').forEach(btn => {
+            btn.addEventListener('click', handleSkillClick);
+        });
+
+        // 骰子按钮
+        document.getElementById('useCatchBtn').onclick = () => {
+            // 由服务器处理骰子
+            diceArea.classList.remove('show');
+        };
+        document.getElementById('noCatchBtn').onclick = () => {
+            diceArea.classList.remove('show');
+        };
+
+        // 重新开始
+        restartBtn.onclick = () => {
+            ws.send(JSON.stringify({ type: 'restart' }));
+        };
+        newGameBtn.onclick = () => {
+            victoryOverlay.classList.remove('show');
+            ws.send(JSON.stringify({ type: 'restart' }));
+        };
+        backToMenuBtn.onclick = () => {
+            location.reload();
+        };
+
+        // 按钮事件
+        document.getElementById('createBtn').onclick = () => {
+            menuScreen.style.display = 'none';
+            createGroup.classList.add('show');
+        };
+
+        document.getElementById('joinBtn').onclick = () => {
+            console.log('点击了加入房间按钮');
+            menuScreen.style.display = 'none';
+            joinGroup.classList.add('show');
+        };
+
+        document.getElementById('backBtn').onclick = () => {
+            joinGroup.classList.remove('show');
+            menuScreen.style.display = 'block';
+        };
+
+        document.getElementById('backBtn2').onclick = () => {
+            createGroup.classList.remove('show');
+            menuScreen.style.display = 'block';
+        };
+
+        document.getElementById('confirmCreateBtn').onclick = () => {
+            const name = document.getElementById('createNameInput').value.trim() || '玩家';
+            connectWS();
+
+            // 等待连接建立后发送消息
+            const trySend = () => {
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ type: 'create', name }));
+                } else {
+                    setTimeout(trySend, 100);
+                }
+            };
+            trySend();
+
+            menuScreen.style.display = 'none';
+            createGroup.classList.remove('show');
+            status.innerText = '创建房间中...';
+        };
+
+        document.getElementById('confirmJoinBtn').onclick = () => {
+            const room = document.getElementById('roomIdInput').value.trim().toUpperCase();
+            const name = document.getElementById('nameInput').value.trim() || '玩家';
+            if (room.length !== 6) {
+                alert('请输入6位房间号');
+                return;
+            }
+            playerName = name;
+            connectWS();
+
+            // 等待连接建立后发送消息
+            const trySend = () => {
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ type: 'join', roomId: room, name }));
+                } else {
+                    setTimeout(trySend, 100);
+                }
+            };
+            trySend();
+
+            menuScreen.style.display = 'none';
+            joinGroup.classList.remove('show');
+            status.innerText = '加入房间中...';
+        };
+
+        // 初始连接（用于接收广播）
+        connectWS();
+    </script>
+</body>
+</html>

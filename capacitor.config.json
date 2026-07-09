@@ -1,0 +1,8 @@
+{
+  "appId": "com.wuqizi.app",
+  "appName": "技能五子棋",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  }
+}

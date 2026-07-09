@@ -1,0 +1,15 @@
+{
+  "name": "wuqizi-online",
+  "version": "1.0.0",
+  "description": "技能五子棋联机对战",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@capacitor/android": "^5.7.4",
+    "@capacitor/cli": "^5.7.4",
+    "@capacitor/core": "^5.7.4",
+    "ws": "^8.16.0"
+  }
+}

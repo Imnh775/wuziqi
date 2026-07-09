@@ -1,0 +1,18 @@
+# 忽略 Android 项目
+android/
+.gradle/
+*.iml
+local.properties
+
+# 忽略 Python 缓存
+__pycache__/
+*.pyc
+
+# 忽略 IDE 配置
+.vscode/
+.idea/
+
+# 忽略编译产物
+*.exe
+*.o
+*.class

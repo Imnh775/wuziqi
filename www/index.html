@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>⚔️ 技能五子棋</title>
+    <style>
+        :root {
+            --gold: #c49a2c;
+            --gold-light: #f7e3a8;
+            --gold-dark: #7b5a1a;
+            --bg-warm: #fef9e7;
+            --card-bg: rgba(255, 250, 240, 0.85);
+            --text-dark: #3a2c14;
+            --glow-gold: rgba(200, 150, 50, 0.4);
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: #f5efe0;
+            /* 明亮的羊皮纸底色 */
+            background-image:
+                radial-gradient(ellipse at 20% 20%, rgba(92, 166, 95, 0.25) 0%, transparent 55%),
+                radial-gradient(ellipse at 80% 60%, rgba(115, 187, 105, 0.15) 0%, transparent 55%),
+                linear-gradient(180deg, #edfdf1 0%, #d2f3e4 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', 'PingFang SC', '华文楷体', 'STKaiti', '楷体', serif;
+            margin: 0;
+            padding: 20px;
+            overflow-x: hidden;
+            position: relative;
+            cursor: default;
+        }
+
+        /* 动态微光粒子（调整为暗色颗粒，在亮背景上可见） */
+        .stars-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .star {
+            position: absolute;
+            background: #e9fffc;
+            border-radius: 50%;
+            animation: twinkle var(--dur) ease-in-out infinite;
+            animation-delay: var(--delay);
+            opacity: 0;
+            box-shadow: 0 0 calc(var(--size) * 3) calc(var(--size) * 0.8) rgba(180, 140, 70, 0.5);
+        }
+        @keyframes twinkle {
+            0%,
+            100% {
+                opacity: 0.1;
+                transform: scale(0.8);
+            }
+            30% {
+                opacity: 0.55;
+                transform: scale(1.4);
+            }
+            60% {
+                opacity: 0.2;
+                transform: scale(1);
+            }
+            85% {
+                opacity: 0.45;
+                transform: scale(1.2);
+            }
+        }
+
+        /* 柔和光斑 */
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
+            filter: blur(55px);
+            animation: floatOrb var(--orb-dur) ease-in-out infinite;
+            opacity: 0.3;
+        }
+        @keyframes floatOrb {
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
+            25% {
+                transform: translate(35px, -55px) scale(1.25);
+            }
+            50% {
+                transform: translate(-18px, -25px) scale(0.8);
+            }
+            75% {
+                transform: translate(-45px, 35px) scale(1.15);
+            }
+        }
+
+        /* 主容器 */
+        .container {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            max-width: 440px;
+            width: 100%;
+            padding: 10px;
+        }
+
+        /* 标题 */
+        .title {
+            color: #4d3512;
+            font-size: 40px;
+            font-weight: 900;
+            letter-spacing: 4px;
+            margin: 6px 0 2px;
+            text-shadow:
+                0 0 15px rgba(200, 150, 50, 0.5),
+                0 0 40px rgba(180, 130, 40, 0.3),
+                1px 1px 0 #e7d5b0,
+                2px 2px 0 rgba(0, 0, 0, 0.05);
+            animation: titleShimmer 4s ease-in-out infinite;
+        }
+        @keyframes titleShimmer {
+            0%,
+            100% {
+                text-shadow: 0 0 15px rgba(200, 150, 50, 0.5), 0 0 40px rgba(180, 130, 40, 0.3), 1px 1px 0 #e7d5b0;
+            }
+            50% {
+                text-shadow: 0 0 28px rgba(220, 170, 60, 0.8), 0 0 65px rgba(200, 150, 50, 0.5), 1px 1px 0 #e7d5b0;
+            }
+        }
+
+        .subtitle {
+            color: #6b4e1e;
+            font-size: 15px;
+            letter-spacing: 3px;
+            margin-bottom: 30px;
+            font-style: italic;
+            opacity: 0.85;
+        }
+
+        .divider {
+            width: 70%;
+            height: 2px;
+            margin: 0 auto 28px;
+            background: linear-gradient(90deg,
+                    transparent,
+                    rgba(180, 140, 70, 0.3) 15%,
+                    rgba(200, 160, 80, 0.7) 50%,
+                    rgba(180, 140, 70, 0.3) 85%,
+                    transparent);
+            position: relative;
+        }
+        .divider::after {
+            content: '◆';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 8px;
+            color: #b38b40;
+            background: #f5efe0;
+            padding: 0 12px;
+            text-shadow: 0 0 8px rgba(200, 150, 50, 0.6);
+        }
+
+        /* 按钮基础 */
+        .mode-btn {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 18px;
+            border-radius: 20px;
+            padding: 20px 24px;
+            margin: 16px 0;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1.2);
+            border: 2px solid transparent;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            animation: fadeInUp 0.7s ease-out both;
+        }
+        .mode-btn:nth-child(3) {
+            animation-delay: 0.1s;
+        }
+        .mode-btn:nth-child(4) {
+            animation-delay: 0.2s;
+        }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 单人模式 - 明亮蓝灰 */
+        .mode-btn.single {
+            background: linear-gradient(145deg,
+                    rgba(220, 225, 240, 0.9),
+                    rgba(190, 200, 220, 0.9));
+            border-color: rgba(140, 160, 200, 0.6);
+            box-shadow:
+                0 8px 20px rgba(100, 120, 160, 0.25),
+                0 2px 6px rgba(0, 0, 0, 0.08),
+                inset 0 1px 0 rgba(255, 255, 255, 0.7),
+                inset 0 -2px 0 rgba(0, 0, 0, 0.1);
+        }
+        .mode-btn.single .mode-name {
+            color: #1e3045;
+        }
+        .mode-btn.single .mode-desc {
+            color: #3a5068;
+        }
+
+        /* 联机模式 - 明亮绿 */
+        .mode-btn.online {
+            background: linear-gradient(145deg,
+                    rgba(215, 235, 220, 0.9),
+                    rgba(180, 210, 190, 0.9));
+            border-color: rgba(90, 140, 100, 0.6);
+            box-shadow:
+                0 8px 20px rgba(60, 110, 70, 0.25),
+                0 2px 6px rgba(0, 0, 0, 0.08),
+                inset 0 1px 0 rgba(255, 255, 255, 0.7),
+                inset 0 -2px 0 rgba(0, 0, 0, 0.1);
+        }
+        .mode-btn.online .mode-name {
+            color: #1a3320;
+        }
+        .mode-btn.online .mode-desc {
+            color: #2e4d35;
+        }
+
+        /* 按钮发光点 */
+        .btn-glow {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            top: -12px;
+            right: -12px;
+            pointer-events: none;
+            background: rgba(255, 255, 220, 0.5);
+            filter: blur(14px);
+            animation: glowPulse 3s ease-in-out infinite;
+        }
+        @keyframes glowPulse {
+            0%,
+            100% {
+                opacity: 0.4;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.8;
+                transform: scale(1.5);
+            }
+        }
+
+        .mode-btn:active {
+            transform: translateY(4px) scale(0.97);
+            transition: all 0.1s ease;
+        }
+        .mode-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 14px 28px rgba(0, 0, 0, 0.1), 0 3px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .mode-icon {
+            font-size: 48px;
+            flex-shrink: 0;
+            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.15));
+            transition: transform 0.3s;
+            position: relative;
+            z-index: 1;
+        }
+        .mode-btn:hover .mode-icon {
+            transform: scale(1.1) rotate(-5deg);
+        }
+        .mode-btn:active .mode-icon {
+            transform: scale(0.95);
+        }
+
+        .mode-text {
+            text-align: left;
+            position: relative;
+            z-index: 1;
+            flex: 1;
+        }
+        .mode-name {
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            display: block;
+            line-height: 1.3;
+        }
+        .mode-desc {
+            font-size: 13px;
+            margin-top: 4px;
+            display: block;
+            opacity: 0.8;
+            letter-spacing: 1px;
+        }
+
+        /* 边框扫光 */
+        .mode-btn::after {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border-radius: 22px;
+            padding: 2px;
+            background: transparent;
+            pointer-events: none;
+            z-index: 0;
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+        .mode-btn.single::after {
+            background: linear-gradient(135deg,
+                    rgba(160, 180, 220, 0.7),
+                    transparent 40%,
+                    transparent 60%,
+                    rgba(160, 180, 220, 0.5));
+        }
+        .mode-btn.online::after {
+            background: linear-gradient(135deg,
+                    rgba(120, 170, 130, 0.7),
+                    transparent 40%,
+                    transparent 60%,
+                    rgba(120, 170, 130, 0.5));
+        }
+        .mode-btn:hover::after {
+            opacity: 1;
+            animation: borderSweep 2s linear infinite;
+        }
+        @keyframes borderSweep {
+            0% {
+                background-position: 0% 0%;
+            }
+            100% {
+                background-position: 200% 200%;
+            }
+        }
+
+        .footer {
+            color: #7b6b50;
+            font-size: 12px;
+            margin-top: 28px;
+            letter-spacing: 2px;
+            opacity: 0.8;
+            animation: fadeInUp 0.8s ease-out 0.3s both;
+        }
+        .footer .dot {
+            display: inline-block;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: #b38b40;
+            margin: 0 8px;
+            vertical-align: middle;
+            animation: dotPulse 1.5s ease-in-out infinite;
+            box-shadow: 0 0 6px rgba(180, 130, 60, 0.5);
+        }
+        .footer .dot:nth-child(2) {
+            animation-delay: 0.3s;
+        }
+        .footer .dot:nth-child(4) {
+            animation-delay: 0.6s;
+        }
+        @keyframes dotPulse {
+            0%,
+            100% {
+                opacity: 0.3;
+                transform: scale(0.7);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.4);
+            }
+        }
+
+        /* 服务器IP输入框样式 */
+        .server-input-group {
+            background: rgba(255,250,240,0.9);
+            border: 2px solid #b38b40;
+            border-radius: 16px;
+            padding: 14px;
+            margin: 0 auto 16px;
+            max-width: 300px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .server-input-group label {
+            display: block;
+            color: #4d3512;
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
+        .server-input-group input {
+            width: 100%;
+            padding: 10px 12px;
+            font-size: 16px;
+            border: 2px solid #d4b87a;
+            border-radius: 10px;
+            background: #fff;
+            text-align: center;
+            box-sizing: border-box;
+        }
+        .server-input-group small {
+            display: block;
+            color: #888;
+            font-size: 11px;
+            margin-top: 4px;
+        }
+
+        @media (max-width: 380px) {
+            .title {
+                font-size: 30px;
+                letter-spacing: 2px;
+            }
+            .subtitle {
+                font-size: 13px;
+                letter-spacing: 1px;
+            }
+            .mode-btn {
+                padding: 16px 18px;
+                gap: 12px;
+                border-radius: 16px;
+            }
+            .mode-icon {
+                font-size: 38px;
+            }
+            .mode-name {
+                font-size: 18px;
+            }
+            .mode-desc {
+                font-size: 11px;
+            }
+            .crest-ring {
+                width: 60px;
+                height: 60px;
+            }
+            .crest-inner {
+                width: 44px;
+                height: 44px;
+                font-size: 26px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 动态粒子（亮色背景下改为暗金颗粒） -->
+    <div class="stars-container" id="starsContainer"></div>
+
+    <!-- 柔和光斑 -->
+    <div class="orb" style="width:160px;height:160px;background:rgba(220,180,100,0.25);top:8%;left:5%;--orb-dur:8s;"></div>
+    <div class="orb" style="width:130px;height:130px;background:rgba(180,160,140,0.2);bottom:12%;right:5%;--orb-dur:10s;"></div>
+    <div class="orb" style="width:100px;height:100px;background:rgba(160,180,140,0.2);top:55%;left:70%;--orb-dur:9s;"></div>
+
+    <div class="container">
+        <div class="crest-wrapper">
+            <div class="crest-ring">
+            </div>
+        </div>
+
+        <div class="title">⚔️ 技能五子棋</div>
+        <span class="subtitle">咸阳湖秘闻 · 弈者对决</span>
+
+        <div class="divider"></div>
+
+        <!-- 服务器IP输入框 -->
+        <div class="server-input-group" id="serverGroup">
+            <label>📡 服务器IP（联机用）</label>
+            <input type="text" id="serverIP" placeholder="如: 192.168.1.100">
+            <small>首次联机需输入电脑IP地址</small>
+        </div>
+
+        <div class="mode-btn single" onclick="goSingle()">
+            <div class="btn-glow"></div>
+            <div class="mode-icon">🎮</div>
+            <div class="mode-text">
+                <span class="mode-name">单人模式</span>
+                <span class="mode-desc">磨炼棋艺</span>
+            </div>
+        </div>
+
+        <div class="mode-btn online" onclick="goOnline()">
+            <div class="btn-glow"></div>
+            <div class="mode-icon">🌐</div>
+            <div class="mode-text">
+                <span class="mode-name">联机对战</span>
+                <span class="mode-desc">创建 / 加入房间与玩家对战</span>
+            </div>
+        </div>
+
+        <div class="footer">
+            <span class="dot"></span> 选择模式 <span class="dot"></span> 选择技能 <span class="dot"></span> 夺取胜利
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const container = document.getElementById('starsContainer');
+            const starCount = 50;
+            const fragment = document.createDocumentFragment();
+            for (let i = 0; i < starCount; i++) {
+                const star = document.createElement('div');
+                star.classList.add('star');
+                const size = Math.random() * 2.8 + 1;
+                star.style.width = size + 'px';
+                star.style.height = size + 'px';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.setProperty('--size', size + 'px');
+                star.style.setProperty('--dur', (Math.random() * 3 + 2.5) + 's');
+                star.style.setProperty('--delay', (Math.random() * 4) + 's');
+                if (Math.random() < 0.3) {
+                    star.style.background = '#d4b87a';
+                    star.style.boxShadow = '0 0 ' + (size * 3) + 'px ' + (size * 0.8) +
+                        'px rgba(200,150,70,0.6)';
+                }
+                fragment.appendChild(star);
+            }
+            container.appendChild(fragment);
+        })();
+
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                const ripple = document.createElement('span');
+                ripple.style.cssText = `
+                            position: absolute;
+                            border-radius: 50%;
+                            background: rgba(255,255,240,0.7);
+                            width: 20px;
+                            height: 20px;
+                            left: ${e.clientX - btn.getBoundingClientRect().left - 10}px;
+                            top: ${e.clientY - btn.getBoundingClientRect().top - 10}px;
+                            pointer-events: none;
+                            z-index: 5;
+                            animation: rippleOut 0.6s ease-out forwards;
+                        `;
+                btn.appendChild(ripple);
+                setTimeout(() => ripple.remove(), 700);
+            });
+        });
+
+        const rippleStyle = document.createElement('style');
+        rippleStyle.textContent = `
+                    @keyframes rippleOut {
+                        0% { width: 20px; height: 20px; opacity: 1; transform: translate(-50%, -50%) scale(0); }
+                        100% { width: 300px; height: 300px; opacity: 0; transform: translate(-50%, -50%) scale(1); }
+                    }
+                `;
+        document.head.appendChild(rippleStyle);
+
+        // 初始化：读取保存的IP
+        window.onload = function() {
+            const savedIP = localStorage.getItem('serverIP');
+            if (savedIP) {
+                document.getElementById('serverIP').value = savedIP;
+            }
+        };
+
+        // 保存IP并跳转
+        function saveAndGo(url) {
+            const ip = document.getElementById('serverIP').value.trim();
+            if (ip) {
+                localStorage.setItem('serverIP', ip);
+            }
+            location.href = url + (url.includes('?') ? '&' : '?') + 'server=' + ip;
+        }
+
+        function goSingle() {
+            location.href = 'wu.html';
+        }
+
+        function goOnline() {
+            const ip = document.getElementById('serverIP').value.trim();
+            if (!ip) {
+                alert('请先输入电脑的IP地址！\n\n在电脑上运行"启动服务器.bat"可查看IP地址');
+                return;
+            }
+            localStorage.setItem('serverIP', ip);
+            location.href = 'wu-online.html?server=' + ip;
+        }
+    </script>
+</body>
+</html>
